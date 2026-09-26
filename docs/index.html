@@ -1,55 +1,219 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
-    <title>Teachable Machine Image Model</title>
-</head>
-<body>
-    <div>Teachable Machine Image Model</div>
-    <button type="button" onclick="init()">Start</button>
-    <div id="webcam-container"></div>
-    <div id="label-container"></div>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Git Learning - Inteligencia Artificial</title>
+
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
-    <script type="text/javascript">
-        const URL = "https://teachablemachine.withgoogle.com/models/xQ8cw_lhK/";
 
-        let model, webcam, labelContainer, maxPredictions;
-
-        async function init() {
-            const modelURL = URL + "model.json";
-            const metadataURL = URL + "metadata.json";
-
-            model = await tmImage.load(modelURL, metadataURL);
-            maxPredictions = model.getTotalClasses();
-
-            const flip = true;
-            webcam = new tmImage.Webcam(200, 200, flip);
-            await webcam.setup();
-            await webcam.play();
-            window.requestAnimationFrame(loop);
-
-            document.getElementById("webcam-container").appendChild(webcam.canvas);
-            labelContainer = document.getElementById("label-container");
-            for (let i = 0; i < maxPredictions; i++) {
-                labelContainer.appendChild(document.createElement("div"));
-            }
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f8;
+            text-align: center;
+            padding: 40px;
         }
 
-        async function loop() {
-            webcam.update();
-            await predict();
-            window.requestAnimationFrame(loop);
+        .contenedor {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
         }
 
-        async function predict() {
-            const prediction = await model.predict(webcam.canvas);
-            for (let i = 0; i < maxPredictions; i++) {
-                const classPrediction =
-                    prediction[i].className + ": " + prediction[i].probability.toFixed(2);
-                labelContainer.childNodes[i].innerHTML = classPrediction;
-            }
+        h1 {
+            color: #2563eb;
         }
-    </script>
+
+        #preview {
+            display: none;
+            max-width: 300px;
+            max-height: 300px;
+            margin: 20px auto;
+            border-radius: 10px;
+        }
+
+        #resultado {
+            margin-top: 20px;
+            font-size: 22px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        #detalle {
+            margin-top: 15px;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="contenedor">
+
+    <h1>Git Learning</h1>
+
+    <h2>Clasificador con Inteligencia Artificial</h2>
+
+    <p>
+        Sube una imagen de un celular o una tablet
+        para que la Inteligencia Artificial la identifique.
+    </p>
+
+    <input type="file"
+           id="imagenInput"
+           accept="image/*">
+
+    <br>
+
+    <img id="preview">
+
+    <div id="estado">
+        Cargando modelo...
+    </div>
+
+    <div id="resultado"></div>
+
+    <div id="detalle"></div>
+
+</div>
+
+
+<script>
+
+const MODEL_URL =
+"https://teachablemachine.withgoogle.com/models/eAIeySrMu/";
+
+let model;
+
+
+// Cargar modelo de Teachable Machine
+
+async function cargarModelo() {
+
+    const modelURL =
+        MODEL_URL + "model.json";
+
+    const metadataURL =
+        MODEL_URL + "metadata.json";
+
+    try {
+
+        model = await tmImage.load(
+            modelURL,
+            metadataURL
+        );
+
+        document.getElementById("estado").innerHTML =
+            "Modelo cargado correctamente";
+
+        document.getElementById("resultado").innerHTML =
+            "Selecciona una imagen";
+
+    } catch (error) {
+
+        document.getElementById("estado").innerHTML =
+            "Error al cargar el modelo";
+
+        console.error(error);
+    }
+}
+
+
+// Clasificar imagen
+
+async function clasificarImagen() {
+
+    if (!model) {
+        return;
+    }
+
+    const imagen =
+        document.getElementById("preview");
+
+    document.getElementById("resultado").innerHTML =
+        "Analizando...";
+
+    const predicciones =
+        await model.predict(imagen);
+
+    predicciones.sort(
+        (a, b) =>
+        b.probability - a.probability
+    );
+
+    const resultado =
+        predicciones[0];
+
+    document.getElementById("resultado").innerHTML =
+        "Resultado: " +
+        resultado.className +
+        "<br>Confianza: " +
+        (resultado.probability * 100).toFixed(2) +
+        "%";
+
+
+    let detalle =
+        "<h3>Resultados</h3>";
+
+    predicciones.forEach(function(p) {
+
+        detalle +=
+            p.className +
+            ": " +
+            (p.probability * 100).toFixed(2) +
+            "%<br>";
+
+    });
+
+    document.getElementById("detalle").innerHTML =
+        detalle;
+}
+
+
+// Cuando seleccionamos una imagen
+
+document.getElementById("imagenInput")
+.addEventListener("change", function(event) {
+
+    const archivo =
+        event.target.files[0];
+
+    if (!archivo) {
+        return;
+    }
+
+    const imagen =
+        document.getElementById("preview");
+
+    imagen.src =
+        window.URL.createObjectURL(archivo);
+
+    imagen.style.display =
+        "block";
+
+    imagen.onload =
+        function() {
+
+            clasificarImagen();
+
+        };
+
+});
+
+
+// Iniciar
+
+cargarModelo();
+
+</script>
+
 </body>
+
 </html>
